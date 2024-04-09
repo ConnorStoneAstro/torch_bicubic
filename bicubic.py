@@ -23,6 +23,7 @@ BC = torch.tensor(
 
 
 def bicubic_kernels(Z, d1, d2):
+    print(Z.shape)
     dZ1 = torch.zeros_like(Z)
     dZ2 = torch.zeros_like(Z)
     dZ12 = torch.zeros_like(Z)
@@ -32,7 +33,7 @@ def bicubic_kernels(Z, d1, d2):
     dZ1[1:-1] = (Z[:-2] - Z[2:]) / (2 * d1)
     dZ1[0] = (Z[0] - Z[1]) / d1
     dZ1[-1] = (Z[-2] - Z[-1]) / d1
-
+    print(dZ1.shape)
     # First derivatives on second axis
     # df/dy = (f(x,y+1) - f(x,y-1)) / 2
     dZ2[:, 1:-1] = (Z[:, :-2] - Z[:, 2:]) / (2 * d2)
@@ -42,7 +43,7 @@ def bicubic_kernels(Z, d1, d2):
     # Second derivatives across both axes
     # d2f/dxdy = (f(x-h, y-k) - f(x-h, y+k) - f(x+h, y-k) + f(x+h, y+k)) / (4hk)
     dZ12[1:-1, 1:-1] = (Z[:-2, :-2] - Z[:-2, 2:] - Z[2:, :-2] + Z[2:, 2:]) / (4 * d1 * d2)
-
+    print(dZ1.shape)
     return dZ1, dZ2, dZ12
 
 
@@ -104,9 +105,13 @@ def interp_bicubic(
         raise ValueError(f"y must be 0 or 1D (received {y.ndim}D tensor)")
 
     # Convert coordinates to pixel indices
+    idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
+    # Convert coordinates to pixel indices
     h, w = Z.shape
-    x = x.clamp(0 + epsilon, w - 1 - epsilon)
-    y = y.clamp(0 + epsilon, h - 1 - epsilon)
+    x = 0.5 * ((x + 1) * w - 1)
+    y = 0.5 * ((y + 1) * h - 1)
+    # x = x.clamp(0 + epsilon, w - 1 - epsilon)
+    # y = y.clamp(0 + epsilon, h - 1 - epsilon)
 
     # Compute bicubic kernels if not provided
     if dZ1 is None or dZ2 is None or dZ12 is None:
@@ -152,8 +157,8 @@ def interp_bicubic(
 
     # Compute interpolated values
     return_interp = []
-    t = x % 1
-    u = y % 1
+    t = torch.where((x < 0), (x % 1) - 1, torch.where(x >= w - 1, x % 1 + 1, x % 1))
+    u = torch.where((y < 0), (y % 1) - 1, torch.where(y >= h - 1, y % 1 + 1, y % 1))
     if get_Y:
         Y = torch.zeros_like(x)
         for i in range(4):
@@ -183,18 +188,17 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # Create a 2D grid of random values
+    np.random.seed(0)
     Z = np.random.randn(10, 10)
 
     # Interpolate at random locations
-    x = np.linspace(0, 9, 101)
-    y = np.linspace(0, 9, 101)
+    x = np.linspace(-1, 1, 101)
+    y = np.linspace(-1, 1, 101)
     x, y = np.meshgrid(x, y)
     Y, dY1, dY2, ddY = interp_bicubic(
         torch.tensor(x.flatten()),
         torch.tensor(y.flatten()),
         torch.tensor(Z),
-        1 / 9,
-        1 / 9,
         get_Y=True,
         get_dY=True,
         get_ddY=True,
@@ -211,11 +215,9 @@ if __name__ == "__main__":
     plt.savefig("Z.png")
     plt.close()
     print("Y")
-    plt.imshow(
-        Y, extent=(-1 + 1 / 18, 1 - 1 / 18, -1 + 1 / 18, 1 - 1 / 18), origin="lower", cmap="viridis"
-    )
+    plt.imshow(Y, extent=(-1, 1, -1, 1), origin="lower", cmap="viridis")
     plt.colorbar()
-    plt.savefig("Y_est.png")
+    plt.savefig("Y_est.png", dpi=200)
     plt.close()
     print("dY1")
     plt.imshow(dY1, extent=(-1, 1, -1, 1), origin="lower", cmap="viridis")
