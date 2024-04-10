@@ -57,7 +57,6 @@ def interp_bicubic(
     get_Y=True,
     get_dY=False,
     get_ddY=False,
-    epsilon=1e-7,
 ):
     """
     Compute bicubic interpolation of a 2D grid at arbitrary locations.
@@ -88,13 +87,11 @@ def interp_bicubic(
         Second derivative of Z along both axes. If None, it will be estimated
         using central differences.
     get_Y : bool
-        Whether to return the interpolated values.
+        Whether to return the interpolated values. This will add the estimated Y values to the return tuple
     get_dY : bool
-        Whether to return the interpolated first derivatives.
+        Whether to return the interpolated first derivatives. This will add dY1 and dY2 to the return tuple
     get_ddY : bool
-        Whether to return the interpolated second derivatives.
-    epsilon : float
-        Small value to prevent out-of-bound indices.
+        Whether to return the interpolated second derivatives. This will add dY12, dY11, and dY22 to the return tuple
     """
 
     if Z.ndim != 2:
@@ -105,13 +102,11 @@ def interp_bicubic(
         raise ValueError(f"y must be 0 or 1D (received {y.ndim}D tensor)")
 
     # Convert coordinates to pixel indices
-    idxs_out_of_bounds = (y < -1) | (y > 1) | (x < -1) | (x > 1)
-    # Convert coordinates to pixel indices
     h, w = Z.shape
     x = 0.5 * ((x + 1) * w - 1)
+    x = x.clamp(-0.5, w - 0.5)
     y = 0.5 * ((y + 1) * h - 1)
-    # x = x.clamp(0 + epsilon, w - 1 - epsilon)
-    # y = y.clamp(0 + epsilon, h - 1 - epsilon)
+    y = y.clamp(-0.5, h - 0.5)
 
     # Compute bicubic kernels if not provided
     if dZ1 is None or dZ2 is None or dZ12 is None:
@@ -175,11 +170,17 @@ def interp_bicubic(
         return_interp.append(dY1)
         return_interp.append(dY2)
     if get_ddY:
-        ddY = torch.zeros_like(x)
+        dY12 = torch.zeros_like(x)
+        dY11 = torch.zeros_like(x)
+        dY22 = torch.zeros_like(x)
         for i in range(1, 4):
             for j in range(1, 4):
-                ddY += i * j * c[:, i, j] * t ** (i - 1) * u ** (j - 1)
-        return_interp.append(ddY)
+                dY12 += i * j * c[:, i, j] * t ** (i - 1) * u ** (j - 1)
+                dY11 += i * (i - 1) * c[:, i, j] * t ** (i - 2) * u**j
+                dY22 += j * (j - 1) * c[:, i, j] * t**i * u ** (j - 2)
+        return_interp.append(dY12)
+        return_interp.append(dY11)
+        return_interp.append(dY22)
     return tuple(return_interp)
 
 
@@ -195,7 +196,7 @@ if __name__ == "__main__":
     x = np.linspace(-1, 1, 101)
     y = np.linspace(-1, 1, 101)
     x, y = np.meshgrid(x, y)
-    Y, dY1, dY2, ddY = interp_bicubic(
+    Y, dY1, dY2, dY12, dY11, dY22 = interp_bicubic(
         torch.tensor(x.flatten()),
         torch.tensor(y.flatten()),
         torch.tensor(Z),
@@ -206,7 +207,7 @@ if __name__ == "__main__":
     Y = Y.numpy().reshape(101, 101)
     dY1 = dY1.numpy().reshape(101, 101)
     dY2 = dY2.numpy().reshape(101, 101)
-    ddY = ddY.numpy().reshape(101, 101)
+    dY12 = dY12.numpy().reshape(101, 101)
 
     # Plot the results
     print("Z")
@@ -230,7 +231,7 @@ if __name__ == "__main__":
     plt.savefig("dY2_est.png")
     plt.close()
     print("ddY")
-    plt.imshow(ddY, extent=(-1, 1, -1, 1), origin="lower", cmap="viridis")
+    plt.imshow(dY12, extent=(-1, 1, -1, 1), origin="lower", cmap="viridis")
     plt.colorbar()
     plt.savefig("ddY_est.png")
     plt.close()
