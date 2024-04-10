@@ -1,29 +1,26 @@
 import torch
 
-BC = torch.tensor(
-    [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-        [-3, 0, 0, 3, 0, 0, 0, 0, -2, 0, 0, -1, 0, 0, 0, 0],
-        [2, 0, 0, -2, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, -3, 0, 0, 3, 0, 0, 0, 0, -2, 0, 0, -1],
-        [0, 0, 0, 0, 2, 0, 0, -2, 0, 0, 0, 0, 1, 0, 0, 1],
-        [-3, 3, 0, 0, -2, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, -3, 3, 0, 0, -2, -1, 0, 0],
-        [9, -9, 9, -9, 6, 3, -3, -6, 6, -6, -3, 3, 4, 2, 1, 2],
-        [-6, 6, -6, 6, -4, -2, 2, 4, -3, 3, 3, -3, -2, -1, -1, -2],
-        [2, -2, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 2, -2, 0, 0, 1, 1, 0, 0],
-        [-6, 6, -6, 6, -3, -3, 3, 3, -4, 4, 2, -2, -2, -2, -1, -1],
-        [4, -4, 4, -4, 2, 2, -2, -2, 2, -2, -2, 2, 1, 1, 1, 1],
-    ]
+BC = (
+    (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    (0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0),
+    (-3, 0, 0, 3, 0, 0, 0, 0, -2, 0, 0, -1, 0, 0, 0, 0),
+    (2, 0, 0, -2, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0),
+    (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0),
+    (0, 0, 0, 0, -3, 0, 0, 3, 0, 0, 0, 0, -2, 0, 0, -1),
+    (0, 0, 0, 0, 2, 0, 0, -2, 0, 0, 0, 0, 1, 0, 0, 1),
+    (-3, 3, 0, 0, -2, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    (0, 0, 0, 0, 0, 0, 0, 0, -3, 3, 0, 0, -2, -1, 0, 0),
+    (9, -9, 9, -9, 6, 3, -3, -6, 6, -6, -3, 3, 4, 2, 1, 2),
+    (-6, 6, -6, 6, -4, -2, 2, 4, -3, 3, 3, -3, -2, -1, -1, -2),
+    (2, -2, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    (0, 0, 0, 0, 0, 0, 0, 0, 2, -2, 0, 0, 1, 1, 0, 0),
+    (-6, 6, -6, 6, -3, -3, 3, 3, -4, 4, 2, -2, -2, -2, -1, -1),
+    (4, -4, 4, -4, 2, 2, -2, -2, 2, -2, -2, 2, 1, 1, 1, 1),
 )
 
 
 def bicubic_kernels(Z, d1, d2):
-    print(Z.shape)
     dZ1 = torch.zeros_like(Z)
     dZ2 = torch.zeros_like(Z)
     dZ12 = torch.zeros_like(Z)
@@ -33,7 +30,6 @@ def bicubic_kernels(Z, d1, d2):
     dZ1[1:-1] = (Z[:-2] - Z[2:]) / (2 * d1)
     dZ1[0] = (Z[0] - Z[1]) / d1
     dZ1[-1] = (Z[-2] - Z[-1]) / d1
-    print(dZ1.shape)
     # First derivatives on second axis
     # df/dy = (f(x,y+1) - f(x,y-1)) / 2
     dZ2[:, 1:-1] = (Z[:, :-2] - Z[:, 2:]) / (2 * d2)
@@ -43,7 +39,6 @@ def bicubic_kernels(Z, d1, d2):
     # Second derivatives across both axes
     # d2f/dxdy = (f(x-h, y-k) - f(x-h, y+k) - f(x+h, y-k) + f(x+h, y+k)) / (4hk)
     dZ12[1:-1, 1:-1] = (Z[:-2, :-2] - Z[:-2, 2:] - Z[2:, :-2] + Z[2:, 2:]) / (4 * d1 * d2)
-    print(dZ1.shape)
     return dZ1, dZ2, dZ12
 
 
@@ -107,10 +102,12 @@ def interp_bicubic(
     x = x.clamp(-0.5, w - 0.5)
     y = 0.5 * ((y + 1) * h - 1)
     y = y.clamp(-0.5, h - 0.5)
+    d1 = 2.0 / w
+    d2 = 2.0 / h
 
     # Compute bicubic kernels if not provided
     if dZ1 is None or dZ2 is None or dZ12 is None:
-        _dZ1, _dZ2, _dZ12 = bicubic_kernels(Z, 1.0, 1.0)
+        _dZ1, _dZ2, _dZ12 = bicubic_kernels(Z, d1, d2)
     if dZ1 is None:
         dZ1 = _dZ1
     if dZ2 is None:
@@ -134,21 +131,21 @@ def interp_bicubic(
     v[:, 1] = Z[y0, x1]
     v[:, 2] = Z[y1, x1]
     v[:, 3] = Z[y1, x0]
-    v[:, 4] = dZ1[y0, x0]
-    v[:, 5] = dZ1[y0, x1]
-    v[:, 6] = dZ1[y1, x1]
-    v[:, 7] = dZ1[y1, x0]
-    v[:, 8] = dZ2[y0, x0]
-    v[:, 9] = dZ2[y0, x1]
-    v[:, 10] = dZ2[y1, x1]
-    v[:, 11] = dZ2[y1, x0]
-    v[:, 12] = dZ12[y0, x0]
-    v[:, 13] = dZ12[y0, x1]
-    v[:, 14] = dZ12[y1, x1]
-    v[:, 15] = dZ12[y1, x0]
+    v[:, 4] = dZ1[y0, x0] * d1
+    v[:, 5] = dZ1[y0, x1] * d1
+    v[:, 6] = dZ1[y1, x1] * d1
+    v[:, 7] = dZ1[y1, x0] * d1
+    v[:, 8] = dZ2[y0, x0] * d2
+    v[:, 9] = dZ2[y0, x1] * d2
+    v[:, 10] = dZ2[y1, x1] * d2
+    v[:, 11] = dZ2[y1, x0] * d2
+    v[:, 12] = dZ12[y0, x0] * d1 * d2
+    v[:, 13] = dZ12[y0, x1] * d1 * d2
+    v[:, 14] = dZ12[y1, x1] * d1 * d2
+    v[:, 15] = dZ12[y1, x0] * d1 * d2
 
     # Compute interpolation coefficients
-    c = (BC.to(dtype=v.dtype, device=v.device) @ v.unsqueeze(-1)).reshape(-1, 4, 4)
+    c = (torch.tensor(BC, dtype=v.dtype, device=v.device) @ v.unsqueeze(-1)).reshape(-1, 4, 4)
 
     # Compute interpolated values
     return_interp = []
@@ -165,19 +162,24 @@ def interp_bicubic(
         dY2 = torch.zeros_like(x)
         for i in range(4):
             for j in range(4):
-                dY1 += i * c[:, i, j] * t ** (i - 1) * u**j
-                dY2 += j * c[:, i, j] * t**i * u ** (j - 1)
+                if i > 0:
+                    dY1 += i * c[:, i, j] * t ** (i - 1) * u**j
+                if j > 0:
+                    dY2 += j * c[:, i, j] * t**i * u ** (j - 1)
         return_interp.append(dY1)
         return_interp.append(dY2)
     if get_ddY:
         dY12 = torch.zeros_like(x)
         dY11 = torch.zeros_like(x)
         dY22 = torch.zeros_like(x)
-        for i in range(1, 4):
-            for j in range(1, 4):
-                dY12 += i * j * c[:, i, j] * t ** (i - 1) * u ** (j - 1)
-                dY11 += i * (i - 1) * c[:, i, j] * t ** (i - 2) * u**j
-                dY22 += j * (j - 1) * c[:, i, j] * t**i * u ** (j - 2)
+        for i in range(4):
+            for j in range(4):
+                if i > 0 and j > 0:
+                    dY12 += i * j * c[:, i, j] * t ** (i - 1) * u ** (j - 1)
+                if i > 1:
+                    dY11 += i * (i - 1) * c[:, i, j] * t ** (i - 2) * u**j
+                if j > 1:
+                    dY22 += j * (j - 1) * c[:, i, j] * t**i * u ** (j - 2)
         return_interp.append(dY12)
         return_interp.append(dY11)
         return_interp.append(dY22)
@@ -208,6 +210,8 @@ if __name__ == "__main__":
     dY1 = dY1.numpy().reshape(101, 101)
     dY2 = dY2.numpy().reshape(101, 101)
     dY12 = dY12.numpy().reshape(101, 101)
+    dY11 = dY11.numpy().reshape(101, 101)
+    dY22 = dY22.numpy().reshape(101, 101)
 
     # Plot the results
     print("Z")
@@ -230,8 +234,18 @@ if __name__ == "__main__":
     plt.colorbar()
     plt.savefig("dY2_est.png")
     plt.close()
-    print("ddY")
+    print("dY12")
     plt.imshow(dY12, extent=(-1, 1, -1, 1), origin="lower", cmap="viridis")
     plt.colorbar()
-    plt.savefig("ddY_est.png")
+    plt.savefig("dY12_est.png")
+    plt.close()
+    print("dY11")
+    plt.imshow(dY11, extent=(-1, 1, -1, 1), origin="lower", cmap="viridis")
+    plt.colorbar()
+    plt.savefig("dY11_est.png")
+    plt.close()
+    print("dY22")
+    plt.imshow(dY22, extent=(-1, 1, -1, 1), origin="lower", cmap="viridis")
+    plt.colorbar()
+    plt.savefig("dY22_est.png")
     plt.close()
